@@ -107,6 +107,17 @@
                     return;
                 }
 
+                // Chuan hoa du lieu: Hoan doi M1 va M2 neu M1 > M2 de gom nhom tot hon
+                for (var j = 0; j < duLieu.length; j++) {
+                    var valM1 = String(duLieu[j].M1);
+                    var valM2 = String(duLieu[j].M2);
+                    if (valM1 > valM2) {
+                        var tam = duLieu[j].M1;
+                        duLieu[j].M1 = duLieu[j].M2;
+                        duLieu[j].M2 = tam;
+                    }
+                }
+
                 // Sap xep du lieu de gom cac thi sinh co cung M1 va M2 lai gan nhau
                 duLieu.sort(function(a, b) {
                     // Sap xep theo M1 truoc
