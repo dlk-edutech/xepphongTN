@@ -36,7 +36,7 @@
             margin-bottom: 8px;
             color: #555;
         }
-        input[type="file"] { 
+        input[type="file"], input[type="number"] { 
             padding: 8px; 
             border: 1px solid #ccc; 
             border-radius: 4px; 
@@ -74,6 +74,11 @@
         <input type="file" id="fileUpload" accept=".xlsx, .xls" />
     </div>
 
+    <div class="form-group">
+        <label for="soVongLap">Số lần quét tối ưu (vòng lặp):</label>
+        <input type="number" id="soVongLap" value="5000000" min="1000" step="1000" />
+    </div>
+
     <button onclick="xuLyFile()">Xử lý và Tải xuống</button>
     <div id="thongBao"></div>
 </div>
@@ -98,12 +103,16 @@
         var file = fileInput.files[0];
         var thongBao = document.getElementById('thongBao');
         
+        // Lay gia tri so vong lap tu giao dien, mac dinh la 5000000 neu bo trong
+        var soVongLapInput = document.getElementById('soVongLap').value;
+        var maxVongLap = parseInt(soVongLapInput) || 5000000;
+        
         if (!file) {
             alert("Vui lòng chọn file Excel!");
             return;
         }
 
-        thongBao.innerText = "Đang phân tích tổ hợp và quét 5.000.000 lần để tối ưu (vui lòng đợi)...";
+        thongBao.innerText = "Đang phân tích tổ hợp và quét " + maxVongLap.toLocaleString('vi-VN') + " lần để tối ưu (vui lòng đợi)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -184,7 +193,6 @@
                     var tongChiPhi = 0;
                     for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
 
-                    var maxVongLap = 5000000;
                     for(var loop = 0; loop < maxVongLap; loop++) {
                         var loaiThaoTac = Math.floor(Math.random() * 3);
 
