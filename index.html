@@ -75,7 +75,7 @@
     </div>
 
     <div class="form-group">
-        <label for="soVongLap">Số lần quét thuật toán (vòng lặp):</label>
+        <label for="soVongLap">Số lần quét tối ưu (vòng lặp):</label>
         <input type="number" id="soVongLap" value="5000000" />
     </div>
 
@@ -85,12 +85,13 @@
 
 <script>
     function tinhDiemPhong(phong) {
-        var tapMon = new Set();
+        var tapM1 = new Set();
+        var tapM2 = new Set();
         for(var i = 0; i < phong.length; i++) {
-            tapMon.add(phong[i].m1);
-            tapMon.add(phong[i].m2);
+            tapM1.add(phong[i].m1);
+            tapM2.add(phong[i].m2);
         }
-        return tapMon.size;
+        return tapM1.size + tapM2.size;
     }
 
     function kiemTraPhongHoanHao(phong) {
@@ -113,7 +114,7 @@
             return;
         }
 
-        thongBao.innerText = "Đang áp dụng Greedy Clustering & Simulated Annealing " + maxVongLap.toLocaleString('vi-VN') + " lần...";
+        thongBao.innerText = "Đang phân tích tổ hợp và quét " + maxVongLap.toLocaleString('vi-VN') + " lần để tối ưu (vui lòng đợi)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -131,7 +132,6 @@
                         return;
                     }
 
-                    // Buoc 1: Chuan hoa va tao nhom
                     var gomNhom = {};
                     for (var j = 0; j < duLieu.length; j++) {
                         var valM1 = String(duLieu[j].M1);
@@ -152,81 +152,51 @@
                         });
                     }
 
-                    // Buoc 2: Greedy Clustering - Nhap nhom dua tren do giong nhau ve mon thi
-                    var tongSoHS = duLieu.length;
+                    mangNhom.sort(function(a, b) { return b.soLuong - a.soLuong; });
+
+                    var orderedStudents = [];
+                    while (mangNhom.length > 0) {
+                        var duHienTai = orderedStudents.length % 24;
+                        var indexChon = 0; 
+
+                        if (duHienTai !== 0) {
+                            var canThem = 24 - duHienTai;
+                            var timThay = -1;
+                            for (var k = 0; k < mangNhom.length; k++) {
+                                if (mangNhom[k].soLuong % 24 === canThem || mangNhom[k].soLuong === canThem) {
+                                    timThay = k;
+                                    break;
+                                }
+                            }
+                            if (timThay !== -1) {
+                                indexChon = timThay;
+                            }
+                        }
+
+                        var nhomChon = mangNhom.splice(indexChon, 1)[0];
+                        orderedStudents = orderedStudents.concat(nhomChon.danhSach);
+                    }
+
+                    var tongSoHS = orderedStudents.length;
                     var soPhong = Math.ceil(tongSoHS / 24);
                     var danhSachPhong = [];
                     for(var i = 0; i < soPhong; i++) danhSachPhong.push([]);
 
-                    var tongDaXep = 0;
+                    var hsHienTai = 0;
                     for(var i = 0; i < soPhong; i++) {
-                        var sucChua = (i < soPhong - 1) ? 24 : (tongSoHS - tongDaXep);
-                        var phongHienTai = danhSachPhong[i];
-                        var monTrongPhong = new Set();
-
-                        while(phongHienTai.length < sucChua && mangNhom.length > 0) {
-                            var slotConLai = sucChua - phongHienTai.length;
-                            var bestIndex = -1;
-                            var minMonMoi = 999;
-                            var bestKichThuoc = -999;
-
-                            for(var k = 0; k < mangNhom.length; k++) {
-                                var nhom = mangNhom[k];
-                                var m1 = nhom.danhSach[0].m1;
-                                var m2 = nhom.danhSach[0].m2;
-                                var monMoi = 0;
-
-                                if (phongHienTai.length > 0) {
-                                    if (!monTrongPhong.has(m1)) monMoi++;
-                                    if (!monTrongPhong.has(m2)) monMoi++;
-                                }
-
-                                var diemKichThuoc = 0;
-                                if (nhom.soLuong === slotConLai) diemKichThuoc = 1000;
-                                else if (nhom.soLuong < slotConLai) diemKichThuoc = nhom.soLuong;
-                                else diemKichThuoc = slotConLai;
-
-                                if (monMoi < minMonMoi) {
-                                    minMonMoi = monMoi;
-                                    bestKichThuoc = diemKichThuoc;
-                                    bestIndex = k;
-                                } else if (monMoi === minMonMoi) {
-                                    if (diemKichThuoc > bestKichThuoc) {
-                                        bestKichThuoc = diemKichThuoc;
-                                        bestIndex = k;
-                                    }
-                                }
-                            }
-
-                            var nhomChon = mangNhom[bestIndex];
-                            var soNguoiLay = Math.min(slotConLai, nhomChon.soLuong);
-
-                            for(var step = 0; step < soNguoiLay; step++) {
-                                var hs = nhomChon.danhSach.pop();
-                                phongHienTai.push(hs);
-                                monTrongPhong.add(hs.m1);
-                                monTrongPhong.add(hs.m2);
-                                tongDaXep++;
-                            }
-                            
-                            nhomChon.soLuong -= soNguoiLay;
-                            if(nhomChon.soLuong === 0) {
-                                mangNhom.splice(bestIndex, 1);
+                        var soLuongChia = (i < soPhong - 1) ? 24 : (tongSoHS - hsHienTai);
+                        for(var j = 0; j < soLuongChia; j++) {
+                            if(hsHienTai < tongSoHS) {
+                                danhSachPhong[i].push(orderedStudents[hsHienTai++]);
                             }
                         }
                     }
 
-                    // Buoc 3: Simulated Annealing
                     var tongChiPhi = 0;
                     for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
 
-                    var tHienTai = 1.0;
-                    var tMin = 0.0001;
-                    var alpha = maxVongLap > 0 ? Math.pow(tMin / tHienTai, 1.0 / maxVongLap) : 0;
-
                     for(var loop = 0; loop < maxVongLap; loop++) {
                         var loaiThaoTac = Math.floor(Math.random() * 3);
-                        var delta = 0;
 
                         if(loaiThaoTac === 0) {
                             var p = Math.floor(Math.random() * soPhong);
@@ -238,17 +208,11 @@
                             var diemCu = tinhDiemPhong(danhSachPhong[p]);
                             var mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam;
                             var diemMoi = tinhDiemPhong(danhSachPhong[p]);
-                            delta = diemMoi - diemCu;
 
-                            if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
-                                tongChiPhi += delta;
+                            if(diemMoi < diemCu || (diemMoi === diemCu && Math.random() < 0.1)) {
+                                tongChiPhi += (diemMoi - diemCu);
                             } else {
-                                var prob = Math.exp(-delta / tHienTai);
-                                if (Math.random() < prob) {
-                                    tongChiPhi += delta;
-                                } else {
-                                    mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; 
-                                }
+                                mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; 
                             }
                         } 
                         else if (loaiThaoTac === 1) {
@@ -266,18 +230,13 @@
 
                             var diemMoi1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemMoi2 = tinhDiemPhong(danhSachPhong[p2]);
-                            delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
+                            var delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
 
                             if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
                                 tongChiPhi += delta;
                             } else {
-                                var prob = Math.exp(-delta / tHienTai);
-                                if (Math.random() < prob) {
-                                    tongChiPhi += delta;
-                                } else {
-                                    danhSachPhong[p2].pop();
-                                    danhSachPhong[p1].splice(hsIdx, 0, hsDichChuyen);
-                                }
+                                danhSachPhong[p2].pop();
+                                danhSachPhong[p1].splice(hsIdx, 0, hsDichChuyen);
                             }
                         }
                         else {
@@ -298,25 +257,18 @@
 
                             var diemMoi1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemMoi2 = tinhDiemPhong(danhSachPhong[p2]);
-                            delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
+                            var delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
 
                             if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
                                 tongChiPhi += delta;
                             } else {
-                                var prob = Math.exp(-delta / tHienTai);
-                                if (Math.random() < prob) {
-                                    tongChiPhi += delta;
-                                } else {
-                                    hsTam = danhSachPhong[p1][hs1];
-                                    danhSachPhong[p1][hs1] = danhSachPhong[p2][hs2];
-                                    danhSachPhong[p2][hs2] = hsTam;
-                                }
+                                hsTam = danhSachPhong[p1][hs1];
+                                danhSachPhong[p1][hs1] = danhSachPhong[p2][hs2];
+                                danhSachPhong[p2][hs2] = hsTam;
                             }
                         }
-                        tHienTai *= alpha;
                     }
 
-                    // Buoc 4: Sap xep va xuat file
                     var duLieuDaXuLy = [];
                     for(var i = 0; i < soPhong; i++) {
                         for(var j = 0; j < danhSachPhong[i].length; j++) {
@@ -329,6 +281,7 @@
                         }
                     }
 
+                    // Sap xep tang dan theo Phong, sau do tang dan theo SBD
                     duLieuDaXuLy.sort(function(a, b) {
                         if (a["Phòng"] !== b["Phòng"]) {
                             return a["Phòng"] - b["Phòng"];
@@ -343,7 +296,7 @@
                     XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "DanhSachPhong");
                     XLSX.writeFile(newWorkbook, "KetQua_ChiaPhong_ToiUu.xlsx");
                     
-                    thongBao.innerText = "Đã hoàn tất thuật toán mạnh nhất! File đã được tải xuống.";
+                    thongBao.innerText = "Thuật toán đã quét xong " + maxVongLap.toLocaleString('vi-VN') + " lần! File đã được tải xuống.";
                 } catch (error) {
                     alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
                     thongBao.innerText = "Xử lý thất bại.";
