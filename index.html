@@ -281,6 +281,17 @@
                         }
                     }
 
+                    // Sap xep tang dan theo Phong, sau do tang dan theo SBD
+                    duLieuDaXuLy.sort(function(a, b) {
+                        if (a["Phòng"] !== b["Phòng"]) {
+                            return a["Phòng"] - b["Phòng"];
+                        }
+                        // So sanh SBD giong nhu so sanh tu nhien (natural sort) de dam bao 2 dung truoc 10
+                        var sbdA = String(a["SBD"]);
+                        var sbdB = String(b["SBD"]);
+                        return sbdA.localeCompare(sbdB, undefined, {numeric: true, sensitivity: 'base'});
+                    });
+
                     var newWorksheet = XLSX.utils.json_to_sheet(duLieuDaXuLy);
                     var newWorkbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "DanhSachPhong");
