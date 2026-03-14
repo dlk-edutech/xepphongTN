@@ -86,12 +86,10 @@
             tapM1.add(phong[i].m1);
             tapM2.add(phong[i].m2);
         }
-        // Diem cang nho cang tot. Neu tat ca HS co cung M1 va cung M2 thi diem = 2
         return tapM1.size + tapM2.size;
     }
 
     function kiemTraPhongHoanHao(phong) {
-        // Phong da full 24 va so mon dat muc toi thieu tuyet doi (la 2) thi khong can chinh sua them
         return phong.length === 24 && tinhDiemPhong(phong) <= 2;
     }
 
@@ -105,11 +103,10 @@
             return;
         }
 
-        thongBao.innerText = "Đang phân tích tổ hợp và quét tối ưu (có thể mất vài giây)...";
+        thongBao.innerText = "Đang phân tích tổ hợp và quét 5.000.000 lần để tối ưu (vui lòng đợi)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
-            // Su dung setTimeout de UI kip cap nhat trang thai dang xu ly
             setTimeout(function() {
                 try {
                     var data = new Uint8Array(e.target.result);
@@ -124,12 +121,10 @@
                         return;
                     }
 
-                    // Buoc 1: Chuan hoa va gom nhom chinh xac theo tung to hop mon (M1, M2)
                     var gomNhom = {};
                     for (var j = 0; j < duLieu.length; j++) {
                         var valM1 = String(duLieu[j].M1);
                         var valM2 = String(duLieu[j].M2);
-                        // Chuan hoa de to hop khong bi nguoc
                         if (valM1 > valM2) {
                             var tam = valM1; valM1 = valM2; valM2 = tam;
                         }
@@ -146,19 +141,16 @@
                         });
                     }
 
-                    // Sap xep cac to hop mon theo so luong giam dan (Uu tien to hop nhieu nhat)
                     mangNhom.sort(function(a, b) { return b.soLuong - a.soLuong; });
 
-                    // Buoc 2: Xep vao mang dua tren logic lap day phong 24
                     var orderedStudents = [];
                     while (mangNhom.length > 0) {
                         var duHienTai = orderedStudents.length % 24;
-                        var indexChon = 0; // Mac dinh lay nhom dong nhat con lai
+                        var indexChon = 0; 
 
                         if (duHienTai !== 0) {
                             var canThem = 24 - duHienTai;
                             var timThay = -1;
-                            // Tim to hop tiep theo co tong voi so da xep chia het cho 24 (tuc la soLuong chia 24 du canThem)
                             for (var k = 0; k < mangNhom.length; k++) {
                                 if (mangNhom[k].soLuong % 24 === canThem || mangNhom[k].soLuong === canThem) {
                                     timThay = k;
@@ -170,12 +162,10 @@
                             }
                         }
 
-                        // Lay nhom duoc chon va noi vao danh sach tong
                         var nhomChon = mangNhom.splice(indexChon, 1)[0];
                         orderedStudents = orderedStudents.concat(nhomChon.danhSach);
                     }
 
-                    // Buoc 3: Khoi tao danh sach phong (Uu tien lap day 24 HS moi phong)
                     var tongSoHS = orderedStudents.length;
                     var soPhong = Math.ceil(tongSoHS / 24);
                     var danhSachPhong = [];
@@ -183,7 +173,6 @@
 
                     var hsHienTai = 0;
                     for(var i = 0; i < soPhong; i++) {
-                        // Phong cuoi cung se nhan so luong HS con du
                         var soLuongChia = (i < soPhong - 1) ? 24 : (tongSoHS - hsHienTai);
                         for(var j = 0; j < soLuongChia; j++) {
                             if(hsHienTai < tongSoHS) {
@@ -192,18 +181,15 @@
                         }
                     }
 
-                    // Buoc 4: Mo phong vet can bang Local Search (1.000.000 vong lap)
                     var tongChiPhi = 0;
                     for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
 
-                    var maxVongLap = 1000000;
+                    var maxVongLap = 5000000;
                     for(var loop = 0; loop < maxVongLap; loop++) {
                         var loaiThaoTac = Math.floor(Math.random() * 3);
 
                         if(loaiThaoTac === 0) {
-                            // Thao tac 1: Hoan doi M1 va M2 cua 1 HS
                             var p = Math.floor(Math.random() * soPhong);
-                            // Bo qua neu phong trong hoac da dat trang thai hoan hao
                             if(danhSachPhong[p].length === 0 || kiemTraPhongHoanHao(danhSachPhong[p])) continue;
                             
                             var hsIdx = Math.floor(Math.random() * danhSachPhong[p].length);
@@ -216,15 +202,13 @@
                             if(diemMoi < diemCu || (diemMoi === diemCu && Math.random() < 0.1)) {
                                 tongChiPhi += (diemMoi - diemCu);
                             } else {
-                                mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; // Hoan tac
+                                mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; 
                             }
                         } 
                         else if (loaiThaoTac === 1) {
-                            // Thao tac 2: Chuyen 1 HS tu phong nay sang phong khac
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= 24) continue;
-                            // Bo qua neu ca 2 phong deu da hoan hao
                             if(kiemTraPhongHoanHao(danhSachPhong[p1])) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
@@ -241,17 +225,14 @@
                             if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
                                 tongChiPhi += delta;
                             } else {
-                                // Hoan tac
                                 danhSachPhong[p2].pop();
                                 danhSachPhong[p1].splice(hsIdx, 0, hsDichChuyen);
                             }
                         }
                         else {
-                            // Thao tac 3: Doi cho 2 HS o 2 phong
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length === 0 || danhSachPhong[p2].length === 0) continue;
-                            // Bo qua neu 1 trong 2 phong da dat trang thai hoan hao
                             if(kiemTraPhongHoanHao(danhSachPhong[p1]) || kiemTraPhongHoanHao(danhSachPhong[p2])) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
@@ -271,7 +252,6 @@
                             if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
                                 tongChiPhi += delta;
                             } else {
-                                // Hoan tac
                                 hsTam = danhSachPhong[p1][hs1];
                                 danhSachPhong[p1][hs1] = danhSachPhong[p2][hs2];
                                 danhSachPhong[p2][hs2] = hsTam;
@@ -279,7 +259,6 @@
                         }
                     }
 
-                    // Buoc 5: Xuat du lieu sau khi toi uu
                     var duLieuDaXuLy = [];
                     for(var i = 0; i < soPhong; i++) {
                         for(var j = 0; j < danhSachPhong[i].length; j++) {
@@ -302,7 +281,7 @@
                     alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
                     thongBao.innerText = "Xử lý thất bại.";
                 }
-            }, 50); // Delay 50ms de cap nhat UI
+            }, 50); 
         };
         
         reader.readAsArrayBuffer(file);
