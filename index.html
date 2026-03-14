@@ -76,7 +76,7 @@
 
     <div class="form-group">
         <label for="soVongLap">Số lần quét tối ưu (vòng lặp):</label>
-        <input type="number" id="soVongLap" value="5000000" min="1000" step="1000" />
+        <input type="number" id="soVongLap" value="5000000" />
     </div>
 
     <button onclick="xuLyFile()">Xử lý và Tải xuống</button>
@@ -103,9 +103,11 @@
         var file = fileInput.files[0];
         var thongBao = document.getElementById('thongBao');
         
-        // Lay gia tri so vong lap tu giao dien, mac dinh la 5000000 neu bo trong
         var soVongLapInput = document.getElementById('soVongLap').value;
-        var maxVongLap = parseInt(soVongLapInput) || 5000000;
+        var maxVongLap = parseInt(soVongLapInput);
+        if(isNaN(maxVongLap)) {
+            maxVongLap = 5000000;
+        }
         
         if (!file) {
             alert("Vui lòng chọn file Excel!");
@@ -284,7 +286,7 @@
                     XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "DanhSachPhong");
                     XLSX.writeFile(newWorkbook, "KetQua_ChiaPhong_ToiUu.xlsx");
                     
-                    thongBao.innerText = "Thuật toán tối ưu đã chạy xong! File đã được tải xuống.";
+                    thongBao.innerText = "Thuật toán đã quét xong " + maxVongLap.toLocaleString('vi-VN') + " lần! File đã được tải xuống.";
                 } catch (error) {
                     alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
                     thongBao.innerText = "Xử lý thất bại.";
