@@ -105,7 +105,7 @@
             return;
         }
 
-        thongBao.innerText = "Đang quét 1.000.000 lần để tối ưu hóa dữ liệu (có thể mất vài giây)...";
+        thongBao.innerText = "Đang phân tích tổ hợp và quét tối ưu (có thể mất vài giây)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -124,36 +124,59 @@
                         return;
                     }
 
-                    // Buoc 1: Dem tan suat va sap xep so bo de co trang thai khoi tao tot
-                    var demMon = {};
-                    for (var k = 0; k < duLieu.length; k++) {
-                        var m1Str = String(duLieu[k].M1);
-                        var m2Str = String(duLieu[k].M2);
-                        if (!demMon[m1Str]) demMon[m1Str] = 0;
-                        if (!demMon[m2Str]) demMon[m2Str] = 0;
-                        demMon[m1Str]++; demMon[m2Str]++;
-                    }
-
+                    // Buoc 1: Chuan hoa va gom nhom chinh xac theo tung to hop mon (M1, M2)
+                    var gomNhom = {};
                     for (var j = 0; j < duLieu.length; j++) {
                         var valM1 = String(duLieu[j].M1);
                         var valM2 = String(duLieu[j].M2);
-                        if (demMon[valM2] > demMon[valM1] || (demMon[valM2] === demMon[valM1] && valM2 < valM1)) {
-                            var tam = duLieu[j].M1; duLieu[j].M1 = duLieu[j].M2; duLieu[j].M2 = tam;
+                        // Chuan hoa de to hop khong bi nguoc
+                        if (valM1 > valM2) {
+                            var tam = valM1; valM1 = valM2; valM2 = tam;
                         }
+                        var key = valM1 + "|" + valM2;
+                        if (!gomNhom[key]) gomNhom[key] = [];
+                        gomNhom[key].push({ sbd: duLieu[j].SBD, m1: valM1, m2: valM2 });
                     }
 
-                    duLieu.sort(function(a, b) {
-                        var strA1 = String(a.M1), strB1 = String(b.M1);
-                        var strA2 = String(a.M2), strB2 = String(b.M2);
-                        if (demMon[strA1] !== demMon[strB1]) return demMon[strB1] - demMon[strA1]; 
-                        if (strA1 < strB1) return -1; if (strA1 > strB1) return 1;
-                        if (demMon[strA2] !== demMon[strB2]) return demMon[strB2] - demMon[strA2];
-                        if (strA2 < strB2) return -1; if (strA2 > strB2) return 1;
-                        return 0;
-                    });
+                    var mangNhom = [];
+                    for (var key in gomNhom) {
+                        mangNhom.push({
+                            soLuong: gomNhom[key].length,
+                            danhSach: gomNhom[key]
+                        });
+                    }
 
-                    // Buoc 2: Khoi tao danh sach phong (Uu tien lap day 24 HS moi phong)
-                    var tongSoHS = duLieu.length;
+                    // Sap xep cac to hop mon theo so luong giam dan (Uu tien to hop nhieu nhat)
+                    mangNhom.sort(function(a, b) { return b.soLuong - a.soLuong; });
+
+                    // Buoc 2: Xep vao mang dua tren logic lap day phong 24
+                    var orderedStudents = [];
+                    while (mangNhom.length > 0) {
+                        var duHienTai = orderedStudents.length % 24;
+                        var indexChon = 0; // Mac dinh lay nhom dong nhat con lai
+
+                        if (duHienTai !== 0) {
+                            var canThem = 24 - duHienTai;
+                            var timThay = -1;
+                            // Tim to hop tiep theo co tong voi so da xep chia het cho 24 (tuc la soLuong chia 24 du canThem)
+                            for (var k = 0; k < mangNhom.length; k++) {
+                                if (mangNhom[k].soLuong % 24 === canThem || mangNhom[k].soLuong === canThem) {
+                                    timThay = k;
+                                    break;
+                                }
+                            }
+                            if (timThay !== -1) {
+                                indexChon = timThay;
+                            }
+                        }
+
+                        // Lay nhom duoc chon va noi vao danh sach tong
+                        var nhomChon = mangNhom.splice(indexChon, 1)[0];
+                        orderedStudents = orderedStudents.concat(nhomChon.danhSach);
+                    }
+
+                    // Buoc 3: Khoi tao danh sach phong (Uu tien lap day 24 HS moi phong)
+                    var tongSoHS = orderedStudents.length;
                     var soPhong = Math.ceil(tongSoHS / 24);
                     var danhSachPhong = [];
                     for(var i = 0; i < soPhong; i++) danhSachPhong.push([]);
@@ -164,13 +187,12 @@
                         var soLuongChia = (i < soPhong - 1) ? 24 : (tongSoHS - hsHienTai);
                         for(var j = 0; j < soLuongChia; j++) {
                             if(hsHienTai < tongSoHS) {
-                                var d = duLieu[hsHienTai++];
-                                danhSachPhong[i].push({ sbd: d.SBD, m1: d.M1, m2: d.M2 });
+                                danhSachPhong[i].push(orderedStudents[hsHienTai++]);
                             }
                         }
                     }
 
-                    // Buoc 3: Mo phong vet can bang Local Search (Tang len 1.000.000 vong lap)
+                    // Buoc 4: Mo phong vet can bang Local Search (1.000.000 vong lap)
                     var tongChiPhi = 0;
                     for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
 
@@ -202,7 +224,7 @@
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= 24) continue;
-                            // Bo qua neu ca 2 phong deu da hoan hao (mac du p2 chua the hoan hao vi < 24)
+                            // Bo qua neu ca 2 phong deu da hoan hao
                             if(kiemTraPhongHoanHao(danhSachPhong[p1])) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
@@ -257,7 +279,7 @@
                         }
                     }
 
-                    // Buoc 4: Xuat du lieu sau khi toi uu
+                    // Buoc 5: Xuat du lieu sau khi toi uu
                     var duLieuDaXuLy = [];
                     for(var i = 0; i < soPhong; i++) {
                         for(var j = 0; j < danhSachPhong[i].length; j++) {
