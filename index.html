@@ -67,7 +67,7 @@
 <body>
 
 <div class="container">
-    <h2>Phần Mềm Chia Phòng</h2>
+    <h2>Phần Mềm Chia Phòng Tối Ưu</h2>
     
     <div class="form-group">
         <label for="fileUpload">Chọn file Excel đầu vào:</label>
@@ -79,6 +79,16 @@
 </div>
 
 <script>
+    function tinhDiemPhong(phong) {
+        var tapM1 = new Set();
+        var tapM2 = new Set();
+        for(var i = 0; i < phong.length; i++) {
+            tapM1.add(phong[i].m1);
+            tapM2.add(phong[i].m2);
+        }
+        return tapM1.size + tapM2.size;
+    }
+
     function xuLyFile() {
         var fileInput = document.getElementById('fileUpload');
         var file = fileInput.files[0];
@@ -89,111 +99,174 @@
             return;
         }
 
-        thongBao.innerText = "Đang xử lý...";
+        thongBao.innerText = "Đang quét tối ưu hóa dữ liệu (có thể mất vài giây)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
-            try {
-                var data = new Uint8Array(e.target.result);
-                var workbook = XLSX.read(data, {type: 'array'});
-                var firstSheet = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheet];
-                var duLieu = XLSX.utils.sheet_to_json(worksheet);
+            // Su dung setTimeout de UI kip cap nhat trang thai dang xu ly
+            setTimeout(function() {
+                try {
+                    var data = new Uint8Array(e.target.result);
+                    var workbook = XLSX.read(data, {type: 'array'});
+                    var firstSheet = workbook.SheetNames[0];
+                    var worksheet = workbook.Sheets[firstSheet];
+                    var duLieu = XLSX.utils.sheet_to_json(worksheet);
 
-                // Kiem tra du lieu dau vao co dung format khong
-                if(duLieu.length === 0 || !("SBD" in duLieu[0]) || !("M1" in duLieu[0]) || !("M2" in duLieu[0])) {
-                    alert("Lỗi: File Excel đầu vào phải chứa các cột có tiêu đề chính xác là 'SBD', 'M1', và 'M2'.");
-                    thongBao.innerText = "";
-                    return;
-                }
-
-                // Buoc 1: Dem so luong xuat hien cua tung mon thi tren ca 2 cot
-                var demMon = {};
-                for (var k = 0; k < duLieu.length; k++) {
-                    var m1Str = String(duLieu[k].M1);
-                    var m2Str = String(duLieu[k].M2);
-                    if (!demMon[m1Str]) demMon[m1Str] = 0;
-                    if (!demMon[m2Str]) demMon[m2Str] = 0;
-                    demMon[m1Str]++;
-                    demMon[m2Str]++;
-                }
-
-                // Buoc 2: Chuan hoa du lieu - mon nao co so luong nhieu hon se nam o M1
-                for (var j = 0; j < duLieu.length; j++) {
-                    var valM1 = String(duLieu[j].M1);
-                    var valM2 = String(duLieu[j].M2);
-                    
-                    // Neu M2 co so luong nhieu hon M1, hoac bang nhau nhung xep truoc theo bang chu cai
-                    if (demMon[valM2] > demMon[valM1] || (demMon[valM2] === demMon[valM1] && valM2 < valM1)) {
-                        var tam = duLieu[j].M1;
-                        duLieu[j].M1 = duLieu[j].M2;
-                        duLieu[j].M2 = tam;
+                    if(duLieu.length === 0 || !("SBD" in duLieu[0]) || !("M1" in duLieu[0]) || !("M2" in duLieu[0])) {
+                        alert("Lỗi: File Excel đầu vào phải chứa các cột có tiêu đề chính xác là 'SBD', 'M1', và 'M2'.");
+                        thongBao.innerText = "";
+                        return;
                     }
-                }
 
-                // Buoc 3: Sap xep du lieu theo so luong mon thi (giam dan)
-                duLieu.sort(function(a, b) {
-                    var strA1 = String(a.M1);
-                    var strB1 = String(b.M1);
-                    var strA2 = String(a.M2);
-                    var strB2 = String(b.M2);
-
-                    // Uu tien sap xep theo so luong cua M1 truoc
-                    if (demMon[strA1] !== demMon[strB1]) {
-                        return demMon[strB1] - demMon[strA1]; 
+                    // Buoc 1: Dem tan suat va sap xep so bo de co trang thai khoi tao tot
+                    var demMon = {};
+                    for (var k = 0; k < duLieu.length; k++) {
+                        var m1Str = String(duLieu[k].M1);
+                        var m2Str = String(duLieu[k].M2);
+                        if (!demMon[m1Str]) demMon[m1Str] = 0;
+                        if (!demMon[m2Str]) demMon[m2Str] = 0;
+                        demMon[m1Str]++; demMon[m2Str]++;
                     }
-                    
-                    // Neu cung so luong, gom cac mon giong nhau lai de tranh bi roi rac
-                    if (strA1 < strB1) return -1;
-                    if (strA1 > strB1) return 1;
 
-                    // Tiep tuc xet den so luong cua M2
-                    if (demMon[strA2] !== demMon[strB2]) {
-                        return demMon[strB2] - demMon[strA2];
+                    for (var j = 0; j < duLieu.length; j++) {
+                        var valM1 = String(duLieu[j].M1);
+                        var valM2 = String(duLieu[j].M2);
+                        if (demMon[valM2] > demMon[valM1] || (demMon[valM2] === demMon[valM1] && valM2 < valM1)) {
+                            var tam = duLieu[j].M1; duLieu[j].M1 = duLieu[j].M2; duLieu[j].M2 = tam;
+                        }
                     }
-                    
-                    if (strA2 < strB2) return -1;
-                    if (strA2 > strB2) return 1;
 
-                    return 0;
-                });
-
-                var phongHienTai = 1;
-                var soLuongTrongPhong = 0;
-                var duLieuDaXuLy = [];
-
-                // Tien hanh gan so phong, toi da 24 thi sinh / phong
-                for (var i = 0; i < duLieu.length; i++) {
-                    var dong = duLieu[i];
-                    
-                    duLieuDaXuLy.push({
-                        "SBD": dong.SBD,
-                        "M1": dong.M1,
-                        "M2": dong.M2,
-                        "Phòng": phongHienTai
+                    duLieu.sort(function(a, b) {
+                        var strA1 = String(a.M1), strB1 = String(b.M1);
+                        var strA2 = String(a.M2), strB2 = String(b.M2);
+                        if (demMon[strA1] !== demMon[strB1]) return demMon[strB1] - demMon[strA1]; 
+                        if (strA1 < strB1) return -1; if (strA1 > strB1) return 1;
+                        if (demMon[strA2] !== demMon[strB2]) return demMon[strB2] - demMon[strA2];
+                        if (strA2 < strB2) return -1; if (strA2 > strB2) return 1;
+                        return 0;
                     });
 
-                    soLuongTrongPhong++;
-                    
-                    if (soLuongTrongPhong === 24) {
-                        phongHienTai++;
-                        soLuongTrongPhong = 0;
-                    }
-                }
+                    // Buoc 2: Khoi tao danh sach phong
+                    var tongSoHS = duLieu.length;
+                    var soPhong = Math.ceil(tongSoHS / 24);
+                    var danhSachPhong = [];
+                    for(var i = 0; i < soPhong; i++) danhSachPhong.push([]);
 
-                // Tao file Excel moi de xuat ra
-                var newWorksheet = XLSX.utils.json_to_sheet(duLieuDaXuLy);
-                var newWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "DanhSachPhong");
-                
-                // Tai xuong file ket qua
-                XLSX.writeFile(newWorkbook, "KetQua_ChiaPhong.xlsx");
-                
-                thongBao.innerText = "Đã chia phòng và tải xuống thành công!";
-            } catch (error) {
-                alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
-                thongBao.innerText = "Xử lý thất bại.";
-            }
+                    // Chia deu mang lai su linh hoat cho thuat toan chay
+                    var hsHienTai = 0;
+                    for(var i = 0; i < soPhong; i++) {
+                        var soLuongChia = Math.floor(tongSoHS / soPhong) + (i < (tongSoHS % soPhong) ? 1 : 0);
+                        for(var j = 0; j < soLuongChia; j++) {
+                            var d = duLieu[hsHienTai++];
+                            danhSachPhong[i].push({ sbd: d.SBD, m1: d.M1, m2: d.M2 });
+                        }
+                    }
+
+                    // Buoc 3: Mo phong vet can bang Local Search (100,000 vong lap)
+                    var tongChiPhi = 0;
+                    for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
+
+                    var maxVongLap = 100000;
+                    for(var loop = 0; loop < maxVongLap; loop++) {
+                        var loaiThaoTac = Math.floor(Math.random() * 3);
+
+                        if(loaiThaoTac === 0) {
+                            // Thao tac 1: Hoan doi M1 va M2 cua 1 HS
+                            var p = Math.floor(Math.random() * soPhong);
+                            if(danhSachPhong[p].length === 0) continue;
+                            var hsIdx = Math.floor(Math.random() * danhSachPhong[p].length);
+                            var hsObj = danhSachPhong[p][hsIdx];
+
+                            var diemCu = tinhDiemPhong(danhSachPhong[p]);
+                            var mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam;
+                            var diemMoi = tinhDiemPhong(danhSachPhong[p]);
+
+                            if(diemMoi < diemCu || (diemMoi === diemCu && Math.random() < 0.1)) {
+                                tongChiPhi += (diemMoi - diemCu);
+                            } else {
+                                mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; // Hoan tac
+                            }
+                        } 
+                        else if (loaiThaoTac === 1) {
+                            // Thao tac 2: Chuyen 1 HS tu phong nay sang phong khac
+                            var p1 = Math.floor(Math.random() * soPhong);
+                            var p2 = Math.floor(Math.random() * soPhong);
+                            if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= 24) continue;
+
+                            var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
+                            var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
+
+                            var hsIdx = Math.floor(Math.random() * danhSachPhong[p1].length);
+                            var hsDichChuyen = danhSachPhong[p1].splice(hsIdx, 1)[0];
+                            danhSachPhong[p2].push(hsDichChuyen);
+
+                            var diemMoi1 = tinhDiemPhong(danhSachPhong[p1]);
+                            var diemMoi2 = tinhDiemPhong(danhSachPhong[p2]);
+                            var delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
+
+                            if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
+                                tongChiPhi += delta;
+                            } else {
+                                // Hoan tac
+                                danhSachPhong[p2].pop();
+                                danhSachPhong[p1].splice(hsIdx, 0, hsDichChuyen);
+                            }
+                        }
+                        else {
+                            // Thao tac 3: Doi cho 2 HS o 2 phong
+                            var p1 = Math.floor(Math.random() * soPhong);
+                            var p2 = Math.floor(Math.random() * soPhong);
+                            if(p1 === p2 || danhSachPhong[p1].length === 0 || danhSachPhong[p2].length === 0) continue;
+
+                            var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
+                            var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
+
+                            var hs1 = Math.floor(Math.random() * danhSachPhong[p1].length);
+                            var hs2 = Math.floor(Math.random() * danhSachPhong[p2].length);
+
+                            var hsTam = danhSachPhong[p1][hs1];
+                            danhSachPhong[p1][hs1] = danhSachPhong[p2][hs2];
+                            danhSachPhong[p2][hs2] = hsTam;
+
+                            var diemMoi1 = tinhDiemPhong(danhSachPhong[p1]);
+                            var diemMoi2 = tinhDiemPhong(danhSachPhong[p2]);
+                            var delta = (diemMoi1 + diemMoi2) - (diemCu1 + diemCu2);
+
+                            if(delta < 0 || (delta === 0 && Math.random() < 0.05)) {
+                                tongChiPhi += delta;
+                            } else {
+                                // Hoan tac
+                                hsTam = danhSachPhong[p1][hs1];
+                                danhSachPhong[p1][hs1] = danhSachPhong[p2][hs2];
+                                danhSachPhong[p2][hs2] = hsTam;
+                            }
+                        }
+                    }
+
+                    // Buoc 4: Xuat du lieu sau khi toi uu
+                    var duLieuDaXuLy = [];
+                    for(var i = 0; i < soPhong; i++) {
+                        for(var j = 0; j < danhSachPhong[i].length; j++) {
+                            duLieuDaXuLy.push({
+                                "SBD": danhSachPhong[i][j].sbd,
+                                "M1": danhSachPhong[i][j].m1,
+                                "M2": danhSachPhong[i][j].m2,
+                                "Phòng": (i + 1)
+                            });
+                        }
+                    }
+
+                    var newWorksheet = XLSX.utils.json_to_sheet(duLieuDaXuLy);
+                    var newWorkbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, "DanhSachPhong");
+                    XLSX.writeFile(newWorkbook, "KetQua_ChiaPhong_ToiUu.xlsx");
+                    
+                    thongBao.innerText = "Thuật toán tối ưu đã chạy xong! File đã được tải xuống.";
+                } catch (error) {
+                    alert("Đã xảy ra lỗi trong quá trình xử lý: " + error.message);
+                    thongBao.innerText = "Xử lý thất bại.";
+                }
+            }, 50); // Delay 50ms de cap nhat UI
         };
         
         reader.readAsArrayBuffer(file);
