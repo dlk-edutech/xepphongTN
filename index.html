@@ -107,25 +107,54 @@
                     return;
                 }
 
-                // Chuan hoa du lieu: Hoan doi M1 va M2 neu M1 > M2 de gom nhom tot hon
+                // Buoc 1: Dem so luong xuat hien cua tung mon thi tren ca 2 cot
+                var demMon = {};
+                for (var k = 0; k < duLieu.length; k++) {
+                    var m1Str = String(duLieu[k].M1);
+                    var m2Str = String(duLieu[k].M2);
+                    if (!demMon[m1Str]) demMon[m1Str] = 0;
+                    if (!demMon[m2Str]) demMon[m2Str] = 0;
+                    demMon[m1Str]++;
+                    demMon[m2Str]++;
+                }
+
+                // Buoc 2: Chuan hoa du lieu - mon nao co so luong nhieu hon se nam o M1
                 for (var j = 0; j < duLieu.length; j++) {
                     var valM1 = String(duLieu[j].M1);
                     var valM2 = String(duLieu[j].M2);
-                    if (valM1 > valM2) {
+                    
+                    // Neu M2 co so luong nhieu hon M1, hoac bang nhau nhung xep truoc theo bang chu cai
+                    if (demMon[valM2] > demMon[valM1] || (demMon[valM2] === demMon[valM1] && valM2 < valM1)) {
                         var tam = duLieu[j].M1;
                         duLieu[j].M1 = duLieu[j].M2;
                         duLieu[j].M2 = tam;
                     }
                 }
 
-                // Sap xep du lieu de gom cac thi sinh co cung M1 va M2 lai gan nhau
+                // Buoc 3: Sap xep du lieu theo so luong mon thi (giam dan)
                 duLieu.sort(function(a, b) {
-                    // Sap xep theo M1 truoc
-                    if (a.M1 < b.M1) return -1;
-                    if (a.M1 > b.M1) return 1;
-                    // Neu M1 giong nhau, tiep tuc sap xep theo M2
-                    if (a.M2 < b.M2) return -1;
-                    if (a.M2 > b.M2) return 1;
+                    var strA1 = String(a.M1);
+                    var strB1 = String(b.M1);
+                    var strA2 = String(a.M2);
+                    var strB2 = String(b.M2);
+
+                    // Uu tien sap xep theo so luong cua M1 truoc
+                    if (demMon[strA1] !== demMon[strB1]) {
+                        return demMon[strB1] - demMon[strA1]; 
+                    }
+                    
+                    // Neu cung so luong, gom cac mon giong nhau lai de tranh bi roi rac
+                    if (strA1 < strB1) return -1;
+                    if (strA1 > strB1) return 1;
+
+                    // Tiep tuc xet den so luong cua M2
+                    if (demMon[strA2] !== demMon[strB2]) {
+                        return demMon[strB2] - demMon[strA2];
+                    }
+                    
+                    if (strA2 < strB2) return -1;
+                    if (strA2 > strB2) return 1;
+
                     return 0;
                 });
 
