@@ -86,7 +86,13 @@
             tapM1.add(phong[i].m1);
             tapM2.add(phong[i].m2);
         }
+        // Diem cang nho cang tot. Neu tat ca HS co cung M1 va cung M2 thi diem = 2
         return tapM1.size + tapM2.size;
+    }
+
+    function kiemTraPhongHoanHao(phong) {
+        // Phong da full 24 va so mon dat muc toi thieu tuyet doi (la 2) thi khong can chinh sua them
+        return phong.length === 24 && tinhDiemPhong(phong) <= 2;
     }
 
     function xuLyFile() {
@@ -99,7 +105,7 @@
             return;
         }
 
-        thongBao.innerText = "Đang quét tối ưu hóa dữ liệu (có thể mất vài giây)...";
+        thongBao.innerText = "Đang quét 1.000.000 lần để tối ưu hóa dữ liệu (có thể mất vài giây)...";
 
         var reader = new FileReader();
         reader.onload = function(e) {
@@ -146,34 +152,38 @@
                         return 0;
                     });
 
-                    // Buoc 2: Khoi tao danh sach phong
+                    // Buoc 2: Khoi tao danh sach phong (Uu tien lap day 24 HS moi phong)
                     var tongSoHS = duLieu.length;
                     var soPhong = Math.ceil(tongSoHS / 24);
                     var danhSachPhong = [];
                     for(var i = 0; i < soPhong; i++) danhSachPhong.push([]);
 
-                    // Chia deu mang lai su linh hoat cho thuat toan chay
                     var hsHienTai = 0;
                     for(var i = 0; i < soPhong; i++) {
-                        var soLuongChia = Math.floor(tongSoHS / soPhong) + (i < (tongSoHS % soPhong) ? 1 : 0);
+                        // Phong cuoi cung se nhan so luong HS con du
+                        var soLuongChia = (i < soPhong - 1) ? 24 : (tongSoHS - hsHienTai);
                         for(var j = 0; j < soLuongChia; j++) {
-                            var d = duLieu[hsHienTai++];
-                            danhSachPhong[i].push({ sbd: d.SBD, m1: d.M1, m2: d.M2 });
+                            if(hsHienTai < tongSoHS) {
+                                var d = duLieu[hsHienTai++];
+                                danhSachPhong[i].push({ sbd: d.SBD, m1: d.M1, m2: d.M2 });
+                            }
                         }
                     }
 
-                    // Buoc 3: Mo phong vet can bang Local Search (100,000 vong lap)
+                    // Buoc 3: Mo phong vet can bang Local Search (Tang len 1.000.000 vong lap)
                     var tongChiPhi = 0;
                     for(var i = 0; i < soPhong; i++) tongChiPhi += tinhDiemPhong(danhSachPhong[i]);
 
-                    var maxVongLap = 100000;
+                    var maxVongLap = 1000000;
                     for(var loop = 0; loop < maxVongLap; loop++) {
                         var loaiThaoTac = Math.floor(Math.random() * 3);
 
                         if(loaiThaoTac === 0) {
                             // Thao tac 1: Hoan doi M1 va M2 cua 1 HS
                             var p = Math.floor(Math.random() * soPhong);
-                            if(danhSachPhong[p].length === 0) continue;
+                            // Bo qua neu phong trong hoac da dat trang thai hoan hao
+                            if(danhSachPhong[p].length === 0 || kiemTraPhongHoanHao(danhSachPhong[p])) continue;
+                            
                             var hsIdx = Math.floor(Math.random() * danhSachPhong[p].length);
                             var hsObj = danhSachPhong[p][hsIdx];
 
@@ -192,6 +202,8 @@
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= 24) continue;
+                            // Bo qua neu ca 2 phong deu da hoan hao (mac du p2 chua the hoan hao vi < 24)
+                            if(kiemTraPhongHoanHao(danhSachPhong[p1])) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
@@ -217,6 +229,8 @@
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length === 0 || danhSachPhong[p2].length === 0) continue;
+                            // Bo qua neu 1 trong 2 phong da dat trang thai hoan hao
+                            if(kiemTraPhongHoanHao(danhSachPhong[p1]) || kiemTraPhongHoanHao(danhSachPhong[p2])) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
