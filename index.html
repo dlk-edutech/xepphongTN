@@ -99,13 +99,13 @@
 
 <script>
     function tinhDiemPhong(phong) {
-        var tapM1 = new Set();
-        var tapM2 = new Set();
+        var tapM3 = new Set();
+        var tapM4 = new Set();
         for(var i = 0; i < phong.length; i++) {
-            tapM1.add(phong[i].m1);
-            tapM2.add(phong[i].m2);
+            tapM3.add(phong[i].m3);
+            tapM4.add(phong[i].m4);
         }
-        return tapM1.size + tapM2.size;
+        return tapM3.size + tapM4.size;
     }
 
     function kiemTraPhongHoanHao(phong) {
@@ -140,22 +140,22 @@
                     var worksheet = workbook.Sheets[firstSheet];
                     var duLieu = XLSX.utils.sheet_to_json(worksheet);
 
-                    if(duLieu.length === 0 || !("SBD" in duLieu[0]) || !("M1" in duLieu[0]) || !("M2" in duLieu[0])) {
-                        alert("Lỗi: File Excel đầu vào phải chứa các cột có tiêu đề chính xác là 'SBD', 'M1', và 'M2'.");
+                    if(duLieu.length === 0 || !("SBD" in duLieu[0]) || !("MÔN 3" in duLieu[0]) || !("MÔN 4" in duLieu[0])) {
+                        alert("Lỗi: File Excel đầu vào phải chứa các cột có tiêu đề chính xác là 'SBD', 'MÔN 3', và 'MÔN 4'.");
                         thongBao.innerText = "";
                         return;
                     }
 
                     var gomNhom = {};
                     for (var j = 0; j < duLieu.length; j++) {
-                        var valM1 = String(duLieu[j].M1);
-                        var valM2 = String(duLieu[j].M2);
-                        if (valM1 > valM2) {
-                            var tam = valM1; valM1 = valM2; valM2 = tam;
+                        var valM3 = String(duLieu[j]["MÔN 3"]);
+                        var valM4 = String(duLieu[j]["MÔN 4"]);
+                        if (valM3 > valM4) {
+                            var tam = valM3; valM3 = valM4; valM4 = tam;
                         }
-                        var key = valM1 + "|" + valM2;
+                        var key = valM3 + "|" + valM4;
                         if (!gomNhom[key]) gomNhom[key] = [];
-                        gomNhom[key].push({ sbd: duLieu[j].SBD, m1: valM1, m2: valM2 });
+                        gomNhom[key].push({ sbd: duLieu[j].SBD, m3: valM3, m4: valM4 });
                     }
 
                     var mangNhom = [];
@@ -220,13 +220,13 @@
                             var hsObj = danhSachPhong[p][hsIdx];
 
                             var diemCu = tinhDiemPhong(danhSachPhong[p]);
-                            var mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam;
+                            var mTam = hsObj.m3; hsObj.m3 = hsObj.m4; hsObj.m4 = mTam;
                             var diemMoi = tinhDiemPhong(danhSachPhong[p]);
 
                             if(diemMoi < diemCu || (diemMoi === diemCu && Math.random() < 0.1)) {
                                 tongChiPhi += (diemMoi - diemCu);
                             } else {
-                                mTam = hsObj.m1; hsObj.m1 = hsObj.m2; hsObj.m2 = mTam; 
+                                mTam = hsObj.m3; hsObj.m3 = hsObj.m4; hsObj.m4 = mTam; 
                             }
                         } 
                         else if (loaiThaoTac === 1) {
@@ -288,17 +288,17 @@
                         for(var j = 0; j < danhSachPhong[i].length; j++) {
                             duLieuDaXuLy.push({
                                 "SBD": danhSachPhong[i][j].sbd,
-                                "M1": danhSachPhong[i][j].m1,
-                                "M2": danhSachPhong[i][j].m2,
-                                "Phòng": (i + 1)
+                                "MÔN 3": danhSachPhong[i][j].m3,
+                                "MÔN 4": danhSachPhong[i][j].m4,
+                                "PHÒNG": (i + 1)
                             });
                         }
                     }
 
                     // Sap xep tang dan theo Phong, sau do tang dan theo SBD
                     duLieuDaXuLy.sort(function(a, b) {
-                        if (a["Phòng"] !== b["Phòng"]) {
-                            return a["Phòng"] - b["Phòng"];
+                        if (a["PHÒNG"] !== b["PHÒNG"]) {
+                            return a["PHÒNG"] - b["PHÒNG"];
                         }
                         var sbdA = String(a["SBD"]);
                         var sbdB = String(b["SBD"]);
