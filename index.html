@@ -84,6 +84,11 @@
     </div>
 
     <div class="form-group">
+        <label for="soHocSinh">Số học sinh tối đa mỗi phòng:</label>
+        <input type="number" id="soHocSinh" value="24" min="1" />
+    </div>
+
+    <div class="form-group">
         <label for="soVongLap">Số lần quét tối ưu (vòng lặp):</label>
         <input type="number" id="soVongLap" value="5000000" />
     </div>
@@ -108,8 +113,8 @@
         return tapM3.size + tapM4.size;
     }
 
-    function kiemTraPhongHoanHao(phong) {
-        return phong.length === 24 && tinhDiemPhong(phong) <= 2;
+    function kiemTraPhongHoanHao(phong, maxHS) {
+        return phong.length === maxHS && tinhDiemPhong(phong) <= 2;
     }
 
     function xuLyFile() {
@@ -121,6 +126,12 @@
         var maxVongLap = parseInt(soVongLapInput);
         if(isNaN(maxVongLap)) {
             maxVongLap = 5000000;
+        }
+
+        var soHocSinhInput = document.getElementById('soHocSinh').value;
+        var maxHS = parseInt(soHocSinhInput);
+        if(isNaN(maxHS) || maxHS < 1) {
+            maxHS = 24;
         }
         
         if (!file) {
@@ -170,14 +181,14 @@
 
                     var orderedStudents = [];
                     while (mangNhom.length > 0) {
-                        var duHienTai = orderedStudents.length % 24;
+                        var duHienTai = orderedStudents.length % maxHS;
                         var indexChon = 0; 
 
                         if (duHienTai !== 0) {
-                            var canThem = 24 - duHienTai;
+                            var canThem = maxHS - duHienTai;
                             var timThay = -1;
                             for (var k = 0; k < mangNhom.length; k++) {
-                                if (mangNhom[k].soLuong % 24 === canThem || mangNhom[k].soLuong === canThem) {
+                                if (mangNhom[k].soLuong % maxHS === canThem || mangNhom[k].soLuong === canThem) {
                                     timThay = k;
                                     break;
                                 }
@@ -192,13 +203,13 @@
                     }
 
                     var tongSoHS = orderedStudents.length;
-                    var soPhong = Math.ceil(tongSoHS / 24);
+                    var soPhong = Math.ceil(tongSoHS / maxHS);
                     var danhSachPhong = [];
                     for(var i = 0; i < soPhong; i++) danhSachPhong.push([]);
 
                     var hsHienTai = 0;
                     for(var i = 0; i < soPhong; i++) {
-                        var soLuongChia = (i < soPhong - 1) ? 24 : (tongSoHS - hsHienTai);
+                        var soLuongChia = (i < soPhong - 1) ? maxHS : (tongSoHS - hsHienTai);
                         for(var j = 0; j < soLuongChia; j++) {
                             if(hsHienTai < tongSoHS) {
                                 danhSachPhong[i].push(orderedStudents[hsHienTai++]);
@@ -214,7 +225,7 @@
 
                         if(loaiThaoTac === 0) {
                             var p = Math.floor(Math.random() * soPhong);
-                            if(danhSachPhong[p].length === 0 || kiemTraPhongHoanHao(danhSachPhong[p])) continue;
+                            if(danhSachPhong[p].length === 0 || kiemTraPhongHoanHao(danhSachPhong[p], maxHS)) continue;
                             
                             var hsIdx = Math.floor(Math.random() * danhSachPhong[p].length);
                             var hsObj = danhSachPhong[p][hsIdx];
@@ -232,8 +243,8 @@
                         else if (loaiThaoTac === 1) {
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
-                            if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= 24) continue;
-                            if(kiemTraPhongHoanHao(danhSachPhong[p1])) continue;
+                            if(p1 === p2 || danhSachPhong[p1].length <= 1 || danhSachPhong[p2].length >= maxHS) continue;
+                            if(kiemTraPhongHoanHao(danhSachPhong[p1], maxHS)) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
@@ -257,7 +268,7 @@
                             var p1 = Math.floor(Math.random() * soPhong);
                             var p2 = Math.floor(Math.random() * soPhong);
                             if(p1 === p2 || danhSachPhong[p1].length === 0 || danhSachPhong[p2].length === 0) continue;
-                            if(kiemTraPhongHoanHao(danhSachPhong[p1]) || kiemTraPhongHoanHao(danhSachPhong[p2])) continue;
+                            if(kiemTraPhongHoanHao(danhSachPhong[p1], maxHS) || kiemTraPhongHoanHao(danhSachPhong[p2], maxHS)) continue;
 
                             var diemCu1 = tinhDiemPhong(danhSachPhong[p1]);
                             var diemCu2 = tinhDiemPhong(danhSachPhong[p2]);
